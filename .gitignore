@@ -9,5 +9,5 @@ jspm_packages/
 .npm
 
 
-.secret.json
-.secret*
+secret.json
+secret*
