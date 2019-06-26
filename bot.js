@@ -1,21 +1,26 @@
 const tmi = require('tmi.js');
-const utils = require('./utils')
+const utils = require('./utils.js');
 const https = require("https");
+var request = require("request");
 const fs = require("fs");
 
 
-const rawjson = fs.readFileSync('options.json');
-const optsraw = JSON.parse(rawjson);
+const rawjson = fs.readFileSync('secret.json');
+const secret = JSON.parse(rawjson);
 
 let listOfViewers = [];
+let interactionsLastMinute = 0;
+const interactionLimit = 4;
+let requestsLastMinute = 0;
+const requestLimit = 28;
 
 const opts = {
     identity: {
         username: 'qiqeteBot',
-        password: optsraw.identity.password
+        password: secret.oauthBot
     },
     channels: [
-        optsraw.channels[0]
+        'qiqete'
     ]
 };
 
@@ -29,13 +34,15 @@ client.on('message', onMessageHandler);
 // Connect to Twitch:
 client.connect();
 
-setTimeout(() => { updateWatcherList() }, 3000);
-// setTimeout(() => { setInterval(updateWatcherList, 30000) }, 3000);
+// setTimeout(() => { updateWatcherList() }, 3000);
+setTimeout(() => { setInterval(updateWatcherList, 120000) }, 3000);
+setInterval(clearInteractions, 60000);
 
 // Called every time the bot connects to Twitch chat
 function onConnectedHandler(addr, port) {
-    console.log('QiqeteBot ready for action');
-    client.action('qiqete', 'QiqeteBot ready for action');
+    console.log("BOT CONNECTED");
+    client.action('qiqete', 'here and ready for action');
+    interactionsLastMinute++;
 
     const url = "https://tmi.twitch.tv/group/user/qiqete/chatters";
     https.get(url, res => {
@@ -62,8 +69,6 @@ function updateWatcherList() {
         });
         res.on("end", () => {
             body = JSON.parse(body);
-            console.log(body.chatters.viewers);
-            console.log(listOfViewers);
             let newListOfViewers = body.chatters.viewers;
 
             if (!listOfViewers.equals(newListOfViewers)) {
@@ -75,18 +80,18 @@ function updateWatcherList() {
                             greet += "and " + newViewers[i];
                         } else
                             greet += newViewers[i] + ' ';
-
                     }
+                    greet += "! 🙆";
                     client.action('qiqete', greet);
+                    interactionsLastMinute++;
                 }
                 listOfViewers = newListOfViewers;
             }
             else {
-                client.action('qiqete', "I'm sorry qiqe, no new viewers joined your stream");
+                console.log("I'm sorry qiqe, no new viewers joined your stream🙅‍");
             }
         });
     });
-
 }
 
 function newElementsOnArr(newArr, oldArr) {
@@ -97,11 +102,49 @@ function newElementsOnArr(newArr, oldArr) {
 function onMessageHandler(channel, userstate, message, self) {
     if (self) return; // Bot itself was the sender of the message so do don't interpret it
     console.log(message);
-    if (message.startsWith("!help")) {
-        client.action('qiqete', 'no help provided');
+    if (message.startsWith("!")) {
+        if (message.startsWith("!help")) {
+            client.action('qiqete', '!uptime for uptime <3');
+            interactionsLastMinute++;
+        } else if (message.startsWith("!uptime")) {
+            getUptime();
+        }
     }
 }
 
+let startTime;
+function getUptime() {
+    if (!startTime != null) {
+        console.log("requesting time");
+        var options = {
+            method: 'GET',
+            url: 'https://api.twitch.tv/helix/streams',
+            qs: { user_login: 'qiqete' },
+            headers: { 'Client-ID': secret.client_id }
+        };
+
+        request(options, function (error, response, body) {
+            if (error) {
+                client.action('qiqete is not streaming atm');
+                return;
+            }
+            else if (JSON.parse(body).data.length > 0) {
+                startTime = new Date(JSON.parse(body).data[0].started_at);
+                client.action('qiqete', utils.msToTime(Date.now() - startTime));
+            } else {
+                client.action('qiqete', 'qiqete is not streaming atm');
+            }
+        });
+    } else {
+        let startTimeDate = Date.parse(startTime);
+        client.action('qiqete', utils.msToTime(Date.now() - startTimeDate));
+    }
+}
+
+
+function clearInteractions() {
+    interactionsLastMinute = 0;
+}
 
 
 

@@ -1,0 +1,24 @@
+{
+    "greets": [
+        "hola",
+        "hello",
+        "hi",
+        "hey",
+        "what's up",
+        "heey"
+    ],
+    "botGreets": [
+        "What's up ",
+        "Hii ",
+        "Hey-ho ",
+        "Hola"
+    ],
+    "coolEmojis": [
+        "🤙🏻",
+        "🙆",
+        "🙌🏻",
+        "🙋",
+        "💜",
+        "😛"
+    ]
+}
