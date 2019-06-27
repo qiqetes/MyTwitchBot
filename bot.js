@@ -7,6 +7,8 @@ const fs = require("fs");
 
 const rawjson = fs.readFileSync('secret.json');
 const secret = JSON.parse(rawjson);
+const rawdata = fs.readFileSync('data.json');
+const data = JSON.parse(rawdata);
 
 let listOfViewers = [];
 let interactionsLastMinute = 0;
@@ -34,8 +36,7 @@ client.on('message', onMessageHandler);
 // Connect to Twitch:
 client.connect();
 
-// setTimeout(() => { updateWatcherList() }, 3000);
-setTimeout(() => { setInterval(updateWatcherList, 120000) }, 3000);
+setTimeout(() => { setInterval(updateWatcherList, 60000) }, 3000);
 setInterval(clearInteractions, 60000);
 
 // Called every time the bot connects to Twitch chat
@@ -73,15 +74,15 @@ function updateWatcherList() {
 
             if (!listOfViewers.equals(newListOfViewers)) {
                 let newViewers = newElementsOnArr(newListOfViewers, listOfViewers);
-                if (newViewers != null) {
-                    let greet = 'Hello ';
+                if (newViewers.length > 0) {
+                    let greet = data.botGreets[utils.randomInt(data.botGreets.length)];
                     for (i = 0; i < newViewers.length; i++) {
                         if (i == newViewers - 1 && i != 1) {
-                            greet += "and " + newViewers[i];
+                            greet += "and @" + newViewers[i];
                         } else
-                            greet += newViewers[i] + ' ';
+                            greet += '@' + newViewers[i] + ' ';
                     }
-                    greet += "! 🙆";
+                    greet += '! ' + data.coolEmojis[utils.randomInt(data.coolEmojis.length)];;
                     client.action('qiqete', greet);
                     interactionsLastMinute++;
                 }
@@ -104,7 +105,7 @@ function onMessageHandler(channel, userstate, message, self) {
     console.log(message);
     if (message.startsWith("!")) {
         if (message.startsWith("!help")) {
-            client.action('qiqete', '!uptime for uptime <3');
+            say('!uptime for uptime < 3');
             interactionsLastMinute++;
         } else if (message.startsWith("!uptime")) {
             getUptime();
@@ -119,31 +120,35 @@ function getUptime() {
         var options = {
             method: 'GET',
             url: 'https://api.twitch.tv/helix/streams',
-            qs: { user_login: 'qiqete' },
+            qs: { user_login: secret.user_login },
             headers: { 'Client-ID': secret.client_id }
         };
 
         request(options, function (error, response, body) {
             if (error) {
-                client.action('qiqete is not streaming atm');
+                client.action(secret.user_login + ' is not streaming atm');
                 return;
             }
             else if (JSON.parse(body).data.length > 0) {
                 startTime = new Date(JSON.parse(body).data[0].started_at);
-                client.action('qiqete', utils.msToTime(Date.now() - startTime));
+                say(utils.msToTime(Date.now() - startTime));
             } else {
-                client.action('qiqete', 'qiqete is not streaming atm');
+                say(secret.user_login + ' is not streaming atm');
             }
         });
     } else {
         let startTimeDate = Date.parse(startTime);
-        client.action('qiqete', utils.msToTime(Date.now() - startTimeDate));
+        say(ToTime(Date.now() - startTimeDate));
     }
 }
 
 
 function clearInteractions() {
     interactionsLastMinute = 0;
+}
+
+function say(message) {
+    client.action(secret.user_login, message)
 }
 
 

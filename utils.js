@@ -9,8 +9,12 @@ function msToTime(duration) {
 
     return 'Qiqete has been up for ' + hours + 'h and ' + minutes + 'minutes';
 }
-
+function randomInt(max) {
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max));
+}
 
 module.exports = {
-    msToTime: msToTime
+    msToTime: msToTime,
+    randomInt: randomInt
 };
