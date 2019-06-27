@@ -6,11 +6,11 @@ const fs = require("fs");
 
 console.log("Bot getting ready...");
 
-const rawjson = fs.readFileSync('secret.json');
+const rawjson = fs.readFileSync('./secret.json');
 const secret = JSON.parse(rawjson);
-const rawdata = fs.readFileSync('data.json');
+const rawdata = fs.readFileSync('./data.json');
 const data = JSON.parse(rawdata);
-const followerdata = JSON.parse(fs.readFileSync('followerdata.json'));
+const followerdata = JSON.parse(fs.readFileSync('./followerdata.json'));
 
 let listOfViewers = [];
 let interactionsLastMinute = 0;
@@ -87,9 +87,11 @@ function updateFollowerList() {
                     id: followers.data[i].from_name,
                     bot: false,
                     start: followers.data[i].followed_at,
-                    points: 0
+                    points: 20 // maybe add random points
                 }
                 followerdata.data.push(newFollower);
+                say("Thank you a ton for following my channel @" + newFollower.id + "hope you enjoy the stream");
+
             }
         }
         fs.writeFileSync('followerdata.json', JSON.stringify(followerdata));
