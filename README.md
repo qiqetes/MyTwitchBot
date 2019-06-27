@@ -18,6 +18,7 @@ Simple bot made to manage silly things in my small twitch channel.
 - Mod and ban commands
 - Tell about what you are doing
 - Say goodbye
+- Alert when you gain a follower
 
 
 
