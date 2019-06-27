@@ -4,17 +4,19 @@ const https = require("https");
 var request = require("request");
 const fs = require("fs");
 
+console.log("Bot getting ready...");
 
 const rawjson = fs.readFileSync('secret.json');
 const secret = JSON.parse(rawjson);
 const rawdata = fs.readFileSync('data.json');
 const data = JSON.parse(rawdata);
+const followerdata = JSON.parse(fs.readFileSync('followerdata.json'));
 
 let listOfViewers = [];
 let interactionsLastMinute = 0;
 const interactionLimit = 4;
 let requestsLastMinute = 0;
-const requestLimit = 28;
+const requestLimit = 20;
 
 const opts = {
     identity: {
@@ -36,7 +38,7 @@ client.on('message', onMessageHandler);
 // Connect to Twitch:
 client.connect();
 
-setTimeout(() => { setInterval(updateWatcherList, 60000) }, 3000);
+setTimeout(() => { setInterval(updateEveryMin, 5000) }, 3000);
 setInterval(clearInteractions, 60000);
 
 // Called every time the bot connects to Twitch chat
@@ -59,6 +61,42 @@ function onConnectedHandler(addr, port) {
     });
 }
 
+function updateEveryMin() {
+    updateWatcherList();
+    updateFollowerList();
+}
+
+function updateFollowerList() {
+    const options = {
+        method: 'GET',
+        url: 'https://api.twitch.tv/helix/users/follows',
+        qs: { to_id: '49956791', first: '5' },
+        headers:
+        {
+            'Client-ID': secret.client_id
+        }
+    };
+
+    request(options, function (error, response, body) {
+        if (error) return;
+        let followers = JSON.parse(body);
+        for (i = 0; i < 5; i++) {
+            if (followerdata.data.filter(e => { return e.id === followers.data[i].from_name }).length === 0) {
+                // TODO: add this new follower to the list
+                var newFollower = {
+                    id: followers.data[i].from_name,
+                    bot: false,
+                    start: followers.data[i].followed_at,
+                    points: 0
+                }
+                followerdata.data.push(newFollower);
+            }
+        }
+        fs.writeFileSync('followerdata.json', JSON.stringify(followerdata));
+    });
+}
+
+
 function updateWatcherList() {
     const url = "https://tmi.twitch.tv/group/user/qiqete/chatters";
 
@@ -72,12 +110,13 @@ function updateWatcherList() {
             body = JSON.parse(body);
             let newListOfViewers = body.chatters.viewers;
 
+            console.log(listOfViewers.equals(newListOfViewers));
             if (!listOfViewers.equals(newListOfViewers)) {
                 let newViewers = newElementsOnArr(newListOfViewers, listOfViewers);
                 if (newViewers.length > 0) {
                     let greet = data.botGreets[utils.randomInt(data.botGreets.length)];
                     for (i = 0; i < newViewers.length; i++) {
-                        if (i == newViewers - 1 && i != 1) {
+                        if (i == newViewers - 1 && i != 0) {
                             greet += "and @" + newViewers[i];
                         } else
                             greet += '@' + newViewers[i] + ' ';
@@ -174,27 +213,7 @@ if (Array.prototype.equals)
     console.warn("Overriding existing Array.prototype.equals. Possible causes: New API defines the method, there's a framework conflict or you've got double inclusions in your code.");
 // attach the .equals method to Array's prototype to call it on any array
 Array.prototype.equals = function (array) {
-    // if the other array is a falsy value, return
-    if (!array)
-        return false;
-
-    // compare lengths - can save a lot of time 
-    if (this.length != array.length)
-        return false;
-
-    for (var i = 0, l = this.length; i < l; i++) {
-        // Check if we have nested arrays
-        if (this[i] instanceof Array && array[i] instanceof Array) {
-            // recurse into the nested arrays
-            if (!this[i].equals(array[i]))
-                return false;
-        }
-        else if (this[i] != array[i]) {
-            // Warning - two different object instances will never be equal: {x:20} != {x:20}
-            return false;
-        }
-    }
-    return true;
+    return utils.equalsArray(this, array);
 }
 // Hide method from for-in loops
 Object.defineProperty(Array.prototype, "equals", { enumerable: false });

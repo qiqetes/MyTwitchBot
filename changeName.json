@@ -1,0 +1,7 @@
+{
+    "user_id": "YOUR_USER_ID",
+    "user_login": "YOUR_USERNAME",
+    "oauthBot": "YOUR_BOT_OAUTH_KEY",
+    "oauthCli": "NOT_USED",
+    "client_id": "YOUR_CLIENT_ID"
+}
